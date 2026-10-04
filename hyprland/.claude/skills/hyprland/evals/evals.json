@@ -16,7 +16,7 @@
     {
       "id": 3,
       "prompt": "spotify skal starte automatisk når jeg logger ind og altid ligge på workspace 9 på den venstre skærm uden at stjæle fokus",
-      "expected_output": "Discord pattern only: hl.exec_cmd(\"spotify\") inside the hyprland.start block, plus one window_rule (class matching spotify) with workspace 9, monitor HDMI-A-1, no_initial_focus. Workspace rules untouched — no new workspace_rule and no edit to the 3-10 loop (3-10 deliberately float between monitors; the window rule only holds ws 9 on HDMI-A-1 while Spotify is open). Mentions next login; verified clean.",
+      "expected_output": "Discord pattern only: hl.exec_cmd(\"spotify\") inside the hyprland.start block, plus one window_rule (class matching spotify) with workspace \"9 silent\", monitor = monLeft .. \" silent\" (not a hardcoded port name like HDMI-A-1; without silent on monitor, Hyprland focuses the left monitor and warps the cursor there at login), no_initial_focus. Workspace rules untouched — no new workspace_rule and no edit to the 3-10 loop (3-10 deliberately float between monitors; the window rule only holds ws 9 on monLeft while Spotify is open). Mentions next login; verified clean.",
       "files": []
     }
   ]
