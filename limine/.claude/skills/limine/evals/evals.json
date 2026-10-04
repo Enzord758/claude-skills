@@ -1,0 +1,88 @@
+{
+  "skill_name": "limine",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "kan du tilføje quiet og splash til mine kernel parametre? vil gerne have en renere boot",
+      "expected_output": "Edits /etc/kernel/cmdline (keeping all existing params), regenerates with limine-update, does not hand-edit limine.conf, shows diff + commands and waits for OK.",
+      "files": [],
+      "assertions": [
+        "Proposed /etc/kernel/cmdline contains both quiet and splash",
+        "Proposed /etc/kernel/cmdline keeps every existing parameter (root=UUID, rootflags=subvol=@, rw, pcie_*, nvidia_drm.modeset=1, both video=, lsm=)",
+        "Does not hand-edit the cmdline inside /boot/limine.conf",
+        "Regenerates via limine-update (or limine-mkinitcpio / limine-entry-tool) after editing",
+        "Points out that splash does nothing without plymouth (not installed here)",
+        "Asks for the user's OK before applying anything"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "skift baggrunden i bootmenuen til ~/Pictures/2026-06-21-182651_hyprshot.png, sæt timeout ned på 3 sekunder og gør Windows til standard",
+      "expected_output": "Copies image to /boot, wallpaper line with correct b2sum hash, timeout: 3, default_entry pointing at Windows 11 (path form or correct index), backup, limine-enroll-config after edit, waits for OK.",
+      "files": [],
+      "assertions": [
+        "Copies the image onto the ESP (/boot)",
+        "wallpaper: line carries the correct BLAKE2b hash of the image (literal or computed in commands)",
+        "Sets timeout: 3",
+        "default_entry resolves to Windows 11 (path form or correct index 5)",
+        "Runs limine-enroll-config (or a tool that re-enrolls) after editing limine.conf",
+        "Backs up limine.conf before editing",
+        "Flags the image's odd 1315x283 size / suggests a wallpaper_style",
+        "Asks for the user's OK before applying anything"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "efter en windows opdatering starter pc'en direkte i windows uden at vise limine menuen. hvordan fixer jeg det?",
+      "expected_output": "Diagnoses firmware BootOrder via efibootmgr, fixes with efibootmgr -o putting 0002 (limine_x64.efi) first, not the stale 0001; mentions firmware boot menu as immediate workaround; optionally ENABLE_LIMINE_FALLBACK.",
+      "files": [],
+      "assertions": [
+        "Uses efibootmgr BootOrder as the diagnosis/fix mechanism",
+        "Proposed efibootmgr -o puts 0002 (limine_x64.efi) first, not the stale 0001",
+        "Mentions the firmware boot menu / setup as a way in or alternative fix",
+        "Does not propose regenerating/editing limine.conf as the fix",
+        "Asks for the user's OK before applying anything"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "HJÆLP. jeg rettede timeout i /boot/limine.conf med nano og genstartede og nu står der noget med CHECKSUM MISMATCH FOR CONFIG FILE og den vil ikke boote. skriver fra telefonen, hvad gør jeg??",
+      "expected_output": "Phone-friendly steps: F8 -> 'Limine Boot Loader' (Boot0001, un-enrolled) or disable Secure Boot; boot Linux; limine-enroll-config; re-enable SB if disabled.",
+      "files": [],
+      "assertions": [
+        "Gives a concrete way back into Linux: F8 -> 'Limine Boot Loader' (un-enrolled Boot0001) or temporarily disabling Secure Boot",
+        "Tells the user to run limine-enroll-config once booted",
+        "Does not suggest fixing it via the Limine menu editor",
+        "Least invasive first: live USB / reinstall is not the first step",
+        "If disabling Secure Boot is suggested, reminds to re-enable it afterwards",
+        "Attempted no state-changing boot command (no BLOCKED lines in lrun.log)"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "hvordan ser min bootmenu egentlig ud lige nu? hvilken entry starter den automatisk, og hvad gør de forskellige entries?",
+      "expected_output": "Accurate overview gathered without side effects.",
+      "files": [],
+      "assertions": [
+        "Attempted no state-changing boot command (no BLOCKED lines in lrun.log)",
+        "Correct auto-boot entry (linux-cachyos) and timeout (5 s)",
+        "Covers all top-level entries: Arch Linux/linux-cachyos, Snapshots submenu (~181), Windows 11, EFI fallback",
+        "Explains that 'EFI fallback' actually boots Windows bootmgr, not Limine"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "min /boot partition er ved at være fyldt op og der er mega mange snapshots i bootmenuen. hvad kan jeg gøre ved det?",
+      "expected_output": "Root cause snapper-cleanup.timer disabled; enable it; explain limine_history; no manual deletes.",
+      "files": [],
+      "assertions": [
+        "Identifies disabled snapper-cleanup.timer as the root cause",
+        "Proposes enabling snapper-cleanup.timer (and/or running the cleanup)",
+        "Does not propose deleting files in limine_history or hand-editing limine.conf",
+        "Explains limine_history (kernel/initramfs copies for snapshot entries) as what fills /boot",
+        "Asks for the user's OK before applying anything",
+        "Attempted no state-changing boot command (no BLOCKED lines in lrun.log)"
+      ]
+    }
+  ]
+}

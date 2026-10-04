@@ -1,0 +1,107 @@
+{
+  "skill_name": "arch-config",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Valent kan ikke finde min telefon selvom vi er på samme netværk, og telefonen kan heller ikke se pc'en. kan du fikse det?",
+      "expected_output": "Finds that firewalld's public zone doesn't allow the kdeconnect service (1714-1764 tcp/udp); proposes adding it (ideally LAN-only rich rule like the ssh one) with --permanent + --reload; since running as enzord without sudo, gives the exact sudo commands for the user; doesn't touch the ssh rule; waits for OK; says how to verify.",
+      "files": [],
+      "assertions": [
+        "Identifies the closed firewalld kdeconnect service/ports (1714-1764) as the cause",
+        "Uses firewalld (firewall-cmd) with --permanent plus --reload (or equivalent persistent change)",
+        "Restricts the opening to the LAN (rich rule / source 192.168.1.0/24) or explicitly explains why not",
+        "Does not remove or alter the existing ssh rich rule",
+        "Privileged commands are exact commands for whoever runs them (sudo block if non-root; apply-after-OK if root) — not vague prose",
+        "Asks for the user's OK / waits before applying",
+        "Gives a way to verify (firewall-cmd --list-all, ss/port check, or retry pairing)",
+        "For every proposed change, explains in plain language what the setting/command does, what the user will notice, and how to undo it"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "jeg har ikke opdateret i et par dage. vil gerne have systemet opdateret, ryddet op i pakke-cachen og fjernet pakker jeg ikke bruger mere. og så synes jeg downloads fra mirrors er ret langsomme",
+      "expected_output": "Uses full -Syu (or yay -Syu) not -Sy; mentions checking Arch/CachyOS news and that kernel/nvidia update means reboot; cache cleanup via paccache -rk2 (not -Scc), optionally enabling paccache.timer; lists orphans for review instead of blind removal; mirror speed via reflector.conf (country + sort rate) for Arch and notes CachyOS mirrorlists are separate; gives sudo commands to user since not root; waits for OK.",
+      "files": [],
+      "assertions": [
+        "Upgrade uses full -Syu (pacman or yay), never -Sy <pkg> or bare -Sy",
+        "Mentions reboot after the pending kernel/nvidia update (linux-cachyos 7.2.8-2)",
+        "Cache cleanup uses paccache (keeping >=1-2 versions), not pacman -Scc",
+        "Orphans are listed for review instead of blindly piped into pacman -Rns",
+        "Mirror fix targets reflector config (country filter and/or --sort rate) for the Arch mirrorlist",
+        "Notes CachyOS repos use separate mirrorlists not managed by reflector",
+        "Privileged commands are exact commands (sudo block if non-root; proposed for apply-after-OK if root)",
+        "Waits for the user's OK before anything state-changing",
+        "Does not claim snap-pac takes a post-snapshot (post hook is masked) — only a pre-snapshot",
+        "Finds the leftover download-* dirs in /var/cache/pacman/pkg",
+        "Reviews explicitly installed / AUR packages for unused candidates (not just pacman -Qdt orphans)",
+        "For every proposed change, explains in plain language what the setting/command does, what the user will notice, and how to undo it"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "jeg vil gerne sætte vm.swappiness til 10 og give nvidia_drm fbdev=1. hvordan gør jeg det så det holder efter genstart?",
+      "expected_output": "Puts swappiness in a new /etc/sysctl.d file, applied with sysctl --system and verified; checks /sys/module/nvidia_drm/parameters/fbdev, finds it already Y (default since driver 570) and says no change is needed; if it does propose a modprobe change, the initramfs rebuild goes through limine-update; sudo commands for user; waits for OK.",
+      "files": [],
+      "assertions": [
+        "Puts vm.swappiness=10 in a new /etc/sysctl.d/*.conf file (not /usr/lib, not /etc/sysctl.conf, not mixed into the hardening file)",
+        "Applies sysctl with sysctl --system (or -p <file>) and verifies with sysctl vm.swappiness",
+        "Checks the live fbdev value (/sys/module/nvidia_drm/parameters/fbdev or similar) and discovers it is already Y",
+        "Tells the user fbdev needs no change (already enabled by default) — or, if it still proposes making it explicit, says it's redundant",
+        "Any initramfs rebuild proposed goes through limine-update (not bare mkinitcpio -P, not editing limine.conf); N/A-pass if none proposed",
+        "Privileged commands are exact commands for whoever runs them",
+        "Waits for the user's OK before applying",
+        "Explains what vm.swappiness controls and the practical trade-off of 10 vs 100 on this machine",
+        "Explains what nvidia_drm fbdev does (framebuffer console / TTY) in plain language",
+        "Says how to undo each change"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "tilføj mig til docker-gruppen, og så vil jeg gerne kunne køre 'systemctl restart coolercontrold' uden at skulle skrive password hver gang",
+      "expected_output": "Notices docker isn't installed (no docker group) and says so instead of creating the group blindly; if adding a group, uses usermod -aG (with -a) and explains re-login; sudoers drop-in in /etc/sudoers.d/ (no dot in name), NOPASSWD limited to the exact command with full path, validated with visudo -cf before install, mode 0440; explains the lock-out risk and undo; waits for OK.",
+      "files": [],
+      "assertions": [
+        "Checks and reports that docker is not installed / the docker group doesn't exist",
+        "Any group addition uses usermod -aG (append), never -G alone",
+        "Mentions that group membership takes effect after re-login",
+        "sudoers rule is a drop-in under /etc/sudoers.d/ with a name without '.' or '~'",
+        "NOPASSWD is limited to the specific command with full path (/usr/bin/systemctl restart coolercontrold), not ALL",
+        "Validates with visudo -cf before installing, and sets mode 0440",
+        "Explains what the sudoers rule allows and the risk/how to undo it",
+        "Waits for the user's OK before applying",
+        "Leads with the solution to the underlying goal; docker gets one factual sentence plus one short question whether to install it — no install pitch, options or warnings",
+        "Offers a polkit rule (plain systemctl restart, no sudo) or explains why sudoers is chosen instead"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "der er en masse lydudgange fra mine skærme (HDMI/DisplayPort fra grafikkortet) i lydmenuen som jeg aldrig bruger. kan du skjule dem så jeg kun ser dem jeg faktisk bruger?",
+      "expected_output": "Inspects wpctl status / pw-cli to find the NVIDIA HDMI audio device/node names; writes a WirePlumber 0.5 SPA-JSON .conf in ~/.config/wireplumber/wireplumber.conf.d/ with monitor.alsa.rules disabling the matching device/nodes (not 0.4 Lua); restart user services (as root via -M enzord@ or user does it); explains what it does and how to undo; waits for OK.",
+      "files": [],
+      "assertions": [
+        "Inspects the live audio devices (wpctl status / wpctl inspect / pw-cli / pactl) to get the actual names",
+        "Uses WirePlumber 0.5 SPA-JSON .conf in ~/.config/wireplumber/wireplumber.conf.d/ — not 0.4 Lua (main.lua.d / alsa_monitor.rules)",
+        "Match rule targets the NVIDIA HDMI/DP device or nodes specifically, not all outputs",
+        "Restart of the user services is targeted at enzord's user manager (systemctl --user -M enzord@ as root, or the user runs systemctl --user)",
+        "Any file created under /home/Enzord is owned by enzord (runuser or chown), if root",
+        "Explains what the rule does and how to undo it",
+        "Waits for the user's OK before applying"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "installer cronie for mig, jeg har et backup-script i ~/scripts/backup.sh som skal køre hver nat kl 3",
+      "expected_output": "Notices cronie isn't needed: systemd timers already exist; proposes a user (or system) .service + .timer with OnCalendar=*-*-* 03:00 and Persistent=true; explains what each does, verify with systemctl list-timers, undo; mentions cronie only briefly; hands off to systemd skill if needed; waits for OK.",
+      "files": [],
+      "assertions": [
+        "Doesn't install anything new: proposes a systemd timer, or notices cronie is already installed (just disabled) and weighs that — no blind 'pacman -S cronie'",
+        "Does not propose, offer or suggest installing/enabling extra software (e.g. no 'sig til hvis du vil have cronie') — cron is mentioned at most as a brief fact",
+        "Timer uses OnCalendar for 03:00 daily and Persistent=true (so a missed run happens after boot)",
+        "Notices ~/scripts/backup.sh doesn't exist and asks/flags it instead of scheduling a missing file silently",
+        "Runs as enzord (user timer or User=enzord), not as root unnecessarily",
+        "Explains what each unit does and how to undo/disable it",
+        "Waits for the user's OK before applying"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blæserkurver</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface-1: #fcfcfb;
+    --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --s1: #2a78d6; --s2: #eb6834;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark; --page: #0d0d0d; --surface-1: #1a1a19;
+      --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --s1: #3987e5; --s2: #d95926;
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark; --page: #0d0d0d; --surface-1: #1a1a19;
+    --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #f9f9f7; }
+  @media (prefers-color-scheme: dark) { body { background: #0d0d0d; } }
+  .viz-root { background: var(--page); color: var(--text-primary); min-height: 100vh;
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; padding: 24px 16px 48px; }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
+  .sub { color: var(--text-secondary); margin: 0 0 20px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px 8px; margin-bottom: 14px; }
+  .card h2 { font-size: 15px; font-weight: 600; margin: 0; }
+  .card .who { color: var(--text-secondary); font-size: 13px; margin: 2px 0 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 2px; color: var(--text-secondary); font-size: 13px; }
+  .legend i { display: inline-block; width: 16px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 6px; }
+  .legend i.dash { border-top-style: dashed; }
+  svg { display: block; width: 100%; overflow: visible; }
+  svg text { font: 11px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--text-muted); font-variant-numeric: tabular-nums; }
+  svg .lbl { fill: var(--text-secondary); font-size: 12px; }
+  .tip { position: fixed; pointer-events: none; background: var(--surface-1); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.5;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12); display: none; z-index: 10; min-width: 200px; }
+  .tip .row { display: flex; justify-content: space-between; gap: 14px; }
+  .tip .row span:first-child { color: var(--text-secondary); }
+  .tip .sw { display: inline-block; width: 10px; height: 2px; vertical-align: middle; margin-right: 6px; }
+  table { border-collapse: collapse; width: 100%; margin-top: 8px; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--grid); }
+  th { color: var(--text-secondary); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="viz-root"><div class="wrap">
+  <h1 id="title"></h1>
+  <p class="sub" id="sub"></p>
+  <div id="charts"></div>
+</div>
+<div class="tip" id="tip"></div>
+</div>
+<script>
+const DATA = __DATA__;
+const $ = (id) => document.getElementById(id);
+$("title").textContent = DATA.title; $("sub").textContent = DATA.subtitle; document.title = DATA.title;
+const tmin = DATA.tmin, tmax = DATA.tmax;
+function rpm(duty, c) {  // interpolate a calibration curve, if any
+  if (!c || duty == null) return null;
+  for (let i = 1; i < c.length; i++) if (duty <= c[i][0]) {
+    const [d0, r0] = c[i - 1], [d1, r1] = c[i]; return r0 + (r1 - r0) * (duty - d0) / (d1 - d0); }
+  return c[c.length - 1][1];
+}
+const charts = [];
+DATA.profiles.forEach(p => {
+  const card = document.createElement("div"); card.className = "card";
+  const hasNew = p.new != null;
+  card.innerHTML = `<h2>${p.name}</h2><p class="who">${p.who}</p><div class="legend">
+    <span><i ${hasNew ? 'class="dash"' : ""} style="border-color:var(${hasNew ? "--text-muted" : "--s1"})"></i>Nu</span>
+    ${hasNew ? `<span><i style="border-color:var(--s1)"></i>Forslag</span>` : ""}</div>`;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); card.appendChild(svg);
+  if (p.table) card.insertAdjacentHTML("beforeend", `<table><thead><tr>${p.table.head.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${
+    p.table.rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`);
+  $("charts").appendChild(card); charts.push({ p, svg });
+});
+function duty(pts, t) { let i = Math.round((t - tmin) / DATA.step); return pts[Math.max(0, Math.min(pts.length - 1, i))]; }
+function draw(ch) {
+  const { p, svg } = ch, W = svg.clientWidth || 900, H = 294, m = { l: 46, r: 70, t: 40, b: 28 };
+  const pw = W - m.l - m.r, ph = H - m.t - m.b;
+  const x = t => m.l + (t - tmin) / (tmax - tmin) * pw, y = d => m.t + ph - d / 100 * ph;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("height", H); ch.x = x; ch.m = m; ch.pw = pw;
+  let g = "";
+  for (let d = 0; d <= 100; d += 20) g += `<line x1="${m.l}" x2="${m.l + pw}" y1="${y(d)}" y2="${y(d)}" stroke="var(--grid)"/><text x="${m.l - 8}" y="${y(d) + 4}" text-anchor="end">${d} %</text>`;
+  for (let t = Math.ceil(tmin / 10) * 10; t <= tmax; t += 10) g += `<text x="${x(t)}" y="${m.t + ph + 18}" text-anchor="middle">${t} °C</text>`;
+  g += `<line x1="${m.l}" x2="${m.l + pw}" y1="${y(0)}" y2="${y(0)}" stroke="var(--axis)"/>`;
+  // measured operating points: vertical guides + labels + dots on the curves
+  let lastX = -1e9, row = 0;
+  [...(DATA.marks || [])].sort((a, b) => a.t - b.t).forEach(mk => {
+    if (mk.t < tmin || mk.t > tmax) return;
+    row = x(mk.t) - lastX < 120 ? 1 - row : 0;  // alternate rows when labels would collide
+    lastX = x(mk.t);
+    g += `<line x1="${x(mk.t)}" x2="${x(mk.t)}" y1="${m.t - (row ? 0 : 0)}" y2="${m.t + ph}" stroke="var(--axis)" stroke-width="1"/>`;
+    g += `<text x="${x(mk.t)}" y="${m.t - 8 - row * 14}" text-anchor="middle" class="lbl">${mk.label} ${mk.t} °C</text>`;
+  });
+  const path = pts => pts.map((d, i) => `${i ? "L" : "M"}${x(tmin + i * DATA.step).toFixed(1)},${y(d).toFixed(1)}`).join("");
+  const hasNew = p.new != null;
+  g += `<path d="${path(p.now)}" fill="none" stroke="var(${hasNew ? "--text-muted" : "--s1"})" stroke-width="2" ${hasNew ? 'stroke-dasharray="6 4"' : ""}/>`;
+  if (hasNew) g += `<path d="${path(p.new)}" fill="none" stroke="var(--s1)" stroke-width="2"/>`;
+  (DATA.marks || []).forEach(mk => {
+    [[p.now, hasNew ? "--text-muted" : "--s1"], ...(hasNew ? [[p.new, "--s1"]] : [])].forEach(([pts, col]) => {
+      const d = duty(pts, mk.t);
+      g += `<circle cx="${x(mk.t)}" cy="${y(d)}" r="4.5" fill="var(${col})" stroke="var(--surface-1)" stroke-width="2"/>`;
+      g += `<text x="${x(mk.t) + 8}" y="${y(d) + 4}" class="lbl">${Math.round(d)} %</text>`;
+    });
+  });
+  g += `<line class="xh" x1="0" x2="0" y1="${m.t}" y2="${m.t + ph}" stroke="var(--text-muted)" visibility="hidden"/>`;
+  g += `<rect class="hit" x="${m.l}" y="${m.t}" width="${pw}" height="${ph}" fill="transparent"/>`;
+  svg.innerHTML = g;
+  const hit = svg.querySelector(".hit"), xh = svg.querySelector(".xh"), tip = $("tip");
+  hit.onpointermove = ev => {
+    const r = svg.getBoundingClientRect(), sc = W / r.width;
+    let t = tmin + (((ev.clientX - r.left) * sc - m.l) / pw) * (tmax - tmin);
+    t = Math.max(tmin, Math.min(tmax, Math.round(t * 2) / 2));
+    xh.setAttribute("x1", x(t)); xh.setAttribute("x2", x(t)); xh.setAttribute("visibility", "visible");
+    const row = (name, col, d) => { const rp = rpm(d, p.calibration);
+      return `<div class="row"><span><i class="sw" style="background:var(${col})"></i>${name}</span><span>${Math.round(d)} %${rp != null ? ` · ~${Math.round(rp)} rpm` : ""}</span></div>`; };
+    tip.innerHTML = `<b>${t} °C</b>` + row("Nu", hasNew ? "--text-muted" : "--s1", duty(p.now, t)) + (hasNew ? row("Forslag", "--s1", duty(p.new, t)) : "");
+    tip.style.display = "block";
+    tip.style.left = Math.min(ev.clientX + 16, innerWidth - tip.offsetWidth - 8) + "px";
+    tip.style.top = Math.min(ev.clientY + 16, innerHeight - tip.offsetHeight - 8) + "px";
+  };
+  hit.onpointerleave = () => { tip.style.display = "none"; xh.setAttribute("visibility", "hidden"); };
+}
+const redraw = () => charts.forEach(draw); redraw(); addEventListener("resize", redraw);
+</script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+{
+  "skill_name": "systemd",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "dms.service står som inactive (dead) når jeg kører systemctl --user status dms, selvom den er enabled. kan du fikse det så den starter ordentligt?",
+      "expected_output": "Recognises DMS is already running via hl.exec_cmd(\"dms run\") in hyprland.lua and that hyprland-session.target is never started under uwsm; explains the dead state is expected; does NOT just enable/start dms.service (would create a second instance); if offering to move DMS to systemd, removes the exec_cmd and uses graphical-session.target; waits for OK.",
+      "files": [],
+      "assertions": [
+        "Identifies that DMS is already running via hl.exec_cmd(\"dms run\") in hyprland.lua",
+        "Explains hyprland-session.target is never activated (uwsm uses graphical-session.target)",
+        "Does not start/enable dms.service while keeping the exec_cmd launch (no double DMS)",
+        "Any user-manager command uses -M enzord@ / runuser, not plain systemctl --user as root",
+        "Asks for the user's OK before applying anything",
+        "If hyprland.lua is edited, it is written in place (not sed -i / not replaced) so the hard link to ~/dotfiles survives; N/A-pass if not edited"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "lav en systemd timer der kører btrfs scrub på min games disk (/home/Enzord/games) hver søndag kl 4 om natten. hvis maskinen er slukket skal den bare køre næste gang den tænder",
+      "expected_output": "Proposes /etc/systemd/system/<name>.service (Type=oneshot, btrfs scrub start -B /home/Enzord/games) and <name>.timer (OnCalendar=Sun *-*-* 04:00:00, Persistent=true, WantedBy=timers.target); enables only the timer; validates with systemd-analyze calendar/verify; no inline comments; waits for OK.",
+      "files": [],
+      "assertions": [
+        "Runs btrfs scrub on /home/Enzord/games via a oneshot service (own unit or the packaged btrfs-scrub@.service instance)",
+        "Proposes a .timer with OnCalendar resolving to Sunday 04:00",
+        "Timer has Persistent=true",
+        "Timer WantedBy=timers.target and only the timer is enabled",
+        "Unit files contain no inline comments after a value",
+        "Files go in /etc/systemd/system (system units)",
+        "Asks for the user's OK before applying anything"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "min journal fylder alt for meget og boot tager over et minut. kan du kigge på det og foreslå hvad jeg skal gøre?",
+      "expected_output": "Inspects journalctl --disk-usage and systemd-analyze; caps journal via /etc/systemd/journald.conf.d drop-in (SystemMaxUse) not the main conf; notes ~40s of boot is firmware, not Linux; identifies apparmor.service as the biggest userspace item; doesn't apply anything before OK; flags vacuum as irreversible if suggested.",
+      "files": [],
+      "assertions": [
+        "Caps journal via a drop-in in /etc/systemd/journald.conf.d/ (not editing journald.conf itself)",
+        "Uses SystemMaxUse (or equivalent size cap)",
+        "Points out ~40 s of boot is firmware time, not Linux",
+        "Identifies apparmor.service as the largest userspace boot item",
+        "Flags journalctl --vacuum as irreversible if it is suggested",
+        "Asks for the user's OK before applying anything"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "jeg vil gerne have at cliphist (wl-paste --watch cliphist store) kører som en rigtig systemd user service i stedet for at blive startet fra hyprland configen, så den genstarter hvis den crasher",
+      "expected_output": "Proposes ~/.config/systemd/user/cliphist.service owned by enzord, bound to graphical-session.target (PartOf/After/WantedBy), Restart=on-failure; enables via systemctl --user -M enzord@ (not plain --user as root); removes the hl.exec_cmd line from hyprland.lua to avoid duplicates; waits for OK.",
+      "files": [],
+      "assertions": [
+        "Uses a user unit (the packaged /usr/lib/systemd/user/cliphist.service, or a new one under ~/.config/systemd/user/), not a system unit",
+        "Unit is bound to graphical-session.target (WantedBy + PartOf/After)",
+        "Unit has Restart=on-failure or Restart=always",
+        "Enables via systemctl --user -M enzord@ (or runuser as enzord), not plain systemctl --user as root",
+        "Any file created under ~/.config/systemd/user ends up owned by enzord (chown or written via runuser); N/A-pass if no file is created",
+        "Removes the hl.exec_cmd(\"wl-paste --watch cliphist store\") line from hyprland.lua",
+        "Asks for the user's OK before applying anything",
+        "If hyprland.lua is edited, it is written in place (not sed -i / not replaced) so the hard link to ~/dotfiles survives; N/A-pass if not edited"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Køletest</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface-1: #fcfcfb;
+    --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10); --band: rgba(11,11,11,0.035);
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s7: #4a3aa7;
+    --good: #0ca30c; --warning: #fab219; --critical: #d03b3b; --good-text: #006300;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface-1: #1a1a19;
+      --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10); --band: rgba(255,255,255,0.04);
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9;
+      --good-text: #0ca30c;
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface-1: #1a1a19;
+    --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10); --band: rgba(255,255,255,0.04);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9;
+    --good-text: #0ca30c;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #f9f9f7; }
+  @media (prefers-color-scheme: dark) { body { background: #0d0d0d; } }
+  .viz-root { background: var(--page); color: var(--text-primary); min-height: 100vh;
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; padding: 24px 16px 48px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
+  .sub { color: var(--text-secondary); margin: 0 0 20px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .tile .k { color: var(--text-secondary); font-size: 13px; }
+  .tile .v { font-size: 26px; font-weight: 600; margin: 2px 0 6px; }
+  .tile .d { color: var(--text-muted); font-size: 12px; }
+  .meter { height: 6px; border-radius: 3px; background: var(--grid); overflow: hidden; margin: 4px 0 6px; }
+  .meter > span { display: block; height: 100%; border-radius: 3px; background: var(--s1); }
+  .status { display: inline-flex; align-items: flex-start; gap: 6px; font-weight: 600; }
+  .status .dot { margin-top: 4px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px 6px; margin-bottom: 14px; }
+  .card h2 { font-size: 15px; font-weight: 600; margin: 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 6px 0 2px; color: var(--text-secondary); font-size: 13px; }
+  .legend i { display: inline-block; width: 16px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 6px; }
+  .legend i.dash { border-top-style: dashed; }
+  svg { display: block; width: 100%; overflow: visible; }
+  svg text { font: 11px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--text-muted); font-variant-numeric: tabular-nums; }
+  svg .lbl { fill: var(--text-secondary); font-size: 12px; }
+  svg .ref { fill: var(--text-secondary); }
+  .tip { position: fixed; pointer-events: none; background: var(--surface-1); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.5;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12); display: none; z-index: 10; min-width: 190px; }
+  .tip b { font-weight: 600; }
+  .tip .row { display: flex; justify-content: space-between; gap: 14px; }
+  .tip .row span:first-child { color: var(--text-secondary); }
+  .tip .sw { display: inline-block; width: 10px; height: 2px; vertical-align: middle; margin-right: 6px; }
+  details { margin-top: 18px; }
+  summary { cursor: pointer; color: var(--text-secondary); }
+  table { border-collapse: collapse; width: 100%; margin-top: 10px; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--grid); }
+  th { color: var(--text-secondary); font-weight: 600; }
+  .live { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px 14px; margin-bottom: 16px; }
+  .live[hidden] { display: none; }
+  .live .pulse { width: 10px; height: 10px; border-radius: 50%; background: var(--good); animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: 0.25; } }
+  .live b { font-weight: 600; }
+  .live .muted { color: var(--text-muted); }
+  .live .bar { flex: 1 1 200px; height: 6px; border-radius: 3px; background: var(--grid); overflow: hidden; }
+  .live .bar span { display: block; height: 100%; background: var(--s1); border-radius: 3px; }
+  .ok { color: var(--good-text); }
+  .bad { color: var(--critical); }
+</style>
+</head>
+<body>
+<div class="viz-root"><div class="wrap">
+  <div id="live" class="live" hidden></div>
+  <h1 id="title"></h1>
+  <p class="sub" id="sub"></p>
+  <div class="tiles" id="tiles"></div>
+  <div id="charts"></div>
+  <details open>
+    <summary>Tabel pr. fase (sidste 30 s af hver fase)</summary>
+    <div id="table"></div>
+  </details>
+</div>
+<div class="tip" id="tip"></div>
+</div>
+<script>
+const DATA = __DATA__;
+
+const $ = (id) => document.getElementById(id);
+const css = (v) => getComputedStyle(document.querySelector(".viz-root")).getPropertyValue(v).trim();
+const fmtT = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
+const t = DATA.t, T = t[t.length - 1] || 1;
+
+if (DATA.live) {
+  const L = DATA.live, el = $("live");
+  const pct = L.target ? Math.min(100, L.elapsed / L.target * 100) : 0;
+  const steps = (L.plan || []).map(p => p === L.phase ? `<b>${p}</b>` : p).join(" → ");
+  el.innerHTML = `<span class="pulse"></span><b>Kører: ${L.phase}</b>
+    <span>${fmtT(L.elapsed)} / ${fmtT(L.target)}${L.extendable ? " (forlænges hvis stadig stigende)" : ""}</span>
+    <span class="bar"><span style="width:${pct}%"></span></span>
+    ${L.slope != null ? `<span class="muted">stigning ${L.slope.toFixed(2)} °C/min</span>` : ""}
+    <span class="muted">${steps} · opdateres hvert 5. s</span>`;
+  el.hidden = false;
+  try { const y = sessionStorage.getItem("ccScroll"); if (y) scrollTo(0, +y); } catch (e) {}
+  setTimeout(() => { try { sessionStorage.setItem("ccScroll", scrollY); } catch (e) {} location.reload(); }, 5000);
+}
+$("title").textContent = DATA.title;
+$("sub").textContent = DATA.subtitle;
+document.title = DATA.title;
+
+// ---- stat tiles
+function statusHTML(level, text) {
+  const col = { good: "var(--good)", warning: "var(--warning)", critical: "var(--critical)" }[level];
+  const icon = { good: "✓", warning: "!", critical: "✕" }[level];
+  return `<span class="status"><span class="dot" style="background:${col}"></span>${icon} ${text}</span>`;
+}
+$("tiles").innerHTML = DATA.tiles.map(x => `
+  <div class="tile"${x.wide ? ' style="grid-column: span 2"' : ""}>
+    <div class="k">${x.label}</div>
+    <div class="v">${x.value}</div>
+    ${x.meter != null ? `<div class="meter"><span style="width:${Math.min(100, x.meter)}%"></span></div>` : ""}
+    <div class="d">${x.status ? statusHTML(x.status, x.detail) : x.detail}</div>
+  </div>`).join("");
+
+// ---- charts
+const charts = [];
+function niceTicks(lo, hi, n = 5) {
+  const span = hi - lo, step0 = span / n, mag = Math.pow(10, Math.floor(Math.log10(step0)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => span / s <= n) || mag * 10;
+  const out = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(6));
+  return { ticks: out, lo: Math.floor(lo / step) * step, hi: Math.ceil(hi / step) * step };
+}
+
+function makeChart(spec, first) {
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = `<h2>${spec.title}</h2><div class="legend">${spec.series.map(s =>
+    `<span><i class="${s.dashed ? "dash" : ""}" style="border-color:var(${s.color})"></i>${s.name}</span>`).join("")}${
+    (spec.refs || []).map(r => `<span><i class="dash" style="border-color:var(--text-muted)"></i>${r.label}</span>`).join("")}</div>`;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  card.appendChild(svg);
+  $("charts").appendChild(card);
+  const ch = { spec, svg, first };
+  charts.push(ch);
+  return ch;
+}
+
+function draw(ch) {
+  const { spec, svg, first } = ch;
+  const W = svg.clientWidth || 900, H = 230, m = { l: 46, r: 108, t: first ? 22 : 10, b: 26 };
+  const pw = W - m.l - m.r, ph = H - m.t - m.b;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("height", H);
+  const vals = spec.series.flatMap(s => DATA[s.key].filter(v => v != null)).concat((spec.refs || []).map(r => r.y));
+  let lo = spec.min != null ? spec.min : Math.min(...vals), hi = spec.max != null ? spec.max : Math.max(...vals);
+  const pad = (hi - lo) * 0.08 || 5; if (spec.min == null) lo -= pad; if (spec.max == null) hi += pad;
+  const nt = niceTicks(lo, hi); lo = spec.min != null ? spec.min : nt.lo; hi = spec.max != null ? spec.max : nt.hi;
+  const x = (s) => m.l + (s / T) * pw, y = (v) => m.t + ph - ((v - lo) / (hi - lo)) * ph;
+  ch.x = x; ch.m = m; ch.pw = pw;
+  let g = "";
+  // phase bands (alternate) + labels on the first chart
+  DATA.phases.forEach((p, i) => {
+    if (i % 2 === 1) g += `<rect x="${x(p.start)}" y="${m.t}" width="${x(p.end) - x(p.start)}" height="${ph}" fill="var(--band)"/>`;
+    if (first) g += `<text x="${(x(p.start) + x(p.end)) / 2}" y="${m.t - 8}" text-anchor="middle" class="lbl">${p.name}</text>`;
+  });
+  // grid + y ticks
+  nt.ticks.filter(v => v >= lo && v <= hi).forEach(v => {
+    g += `<line x1="${m.l}" x2="${m.l + pw}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)" stroke-width="1"/>`;
+    g += `<text x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end">${v}${spec.unit === "%" ? " %" : ""}</text>`;
+  });
+  g += `<line x1="${m.l}" x2="${m.l + pw}" y1="${m.t + ph}" y2="${m.t + ph}" stroke="var(--axis)" stroke-width="1"/>`;
+  // x ticks every minute (every 2 if long)
+  const step = T > 900 ? 120 : 60;
+  for (let s = 0; s <= T; s += step)
+    g += `<text x="${x(s)}" y="${m.t + ph + 18}" text-anchor="middle">${fmtT(s)}</text>`;
+  // reference (limit) lines
+  const refLabels = [];
+  (spec.refs || []).forEach(r => {
+    if (r.y < lo || r.y > hi) return;
+    g += `<line x1="${m.l}" x2="${m.l + pw}" y1="${y(r.y)}" y2="${y(r.y)}" stroke="var(--text-muted)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+    refLabels.push({ yv: y(r.y), text: r.short });
+  });
+  // keep limit labels from overlapping: the higher limit goes up, the next one down
+  refLabels.sort((a, b) => a.yv - b.yv);
+  for (let i = 1; i < refLabels.length; i++)
+    if (refLabels[i].yv - refLabels[i - 1].yv < 13) { refLabels[i - 1].yv -= 6; refLabels[i].yv = refLabels[i - 1].yv + 13; }
+  refLabels.forEach(r => { g += `<text x="${m.l + pw + 8}" y="${r.yv + 4}" class="ref">${r.text}</text>`; });
+  // series lines (null = gap)
+  const ends = [];
+  spec.series.forEach(s => {
+    let d = "", pen = false, last = null;
+    DATA[s.key].forEach((v, i) => {
+      if (v == null) { pen = false; return; }
+      d += `${pen ? "L" : "M"}${x(t[i]).toFixed(1)},${y(v).toFixed(1)}`; pen = true; last = [t[i], v];
+    });
+    g += `<path d="${d}" fill="none" stroke="var(${s.color})" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"${s.dashed ? ' stroke-dasharray="6 4"' : ""}/>`;
+    if (last && !s.dashed) ends.push({ yv: y(last[1]), name: s.name, color: s.color });
+  });
+  // direct end labels, nudged apart
+  ends.sort((a, b) => a.yv - b.yv);
+  for (let i = 1; i < ends.length; i++) if (ends[i].yv - ends[i - 1].yv < 14) ends[i].yv = ends[i - 1].yv + 14;
+  ends.forEach(e => {
+    g += `<line x1="${m.l + pw + 4}" x2="${m.l + pw + 14}" y1="${e.yv}" y2="${e.yv}" stroke="var(${e.color})" stroke-width="2"/>`;
+    g += `<text x="${m.l + pw + 18}" y="${e.yv + 4}" class="lbl">${e.name}</text>`;
+  });
+  g += `<line class="xh" x1="0" x2="0" y1="${m.t}" y2="${m.t + ph}" stroke="var(--text-muted)" stroke-width="1" visibility="hidden"/>`;
+  g += `<rect class="hit" x="${m.l}" y="${m.t}" width="${pw}" height="${ph}" fill="transparent"/>`;
+  svg.innerHTML = g;
+  const hit = svg.querySelector(".hit");
+  hit.addEventListener("pointermove", (ev) => hover(ch, ev));
+  hit.addEventListener("pointerleave", unhover);
+}
+
+// ---- shared crosshair + one tooltip listing every series at that time
+function hover(ch, ev) {
+  const r = ch.svg.getBoundingClientRect(), scale = (ch.svg.viewBox.baseVal.width || r.width) / r.width;
+  const sx = ((ev.clientX - r.left) * scale - ch.m.l) / ch.pw * T;
+  let i = 0, best = Infinity;
+  t.forEach((tv, k) => { const dd = Math.abs(tv - sx); if (dd < best) { best = dd; i = k; } });
+  charts.forEach(c => { const l = c.svg.querySelector(".xh"); l.setAttribute("x1", c.x(t[i])); l.setAttribute("x2", c.x(t[i])); l.setAttribute("visibility", "visible"); });
+  const tip = $("tip");
+  let h = `<b>${fmtT(t[i])} · ${DATA.phase[i]}</b>`;
+  charts.forEach(c => c.spec.series.forEach(s => {
+    const v = DATA[s.key][i];
+    if (v != null) h += `<div class="row"><span><i class="sw" style="background:var(${s.color})"></i>${s.name}</span><span>${Math.round(v * 10) / 10}${c.spec.unit === "%" ? " %" : " " + c.spec.unit}</span></div>`;
+  }));
+  tip.innerHTML = h; tip.style.display = "block";
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  tip.style.left = Math.min(ev.clientX + 16, innerWidth - tw - 8) + "px";
+  tip.style.top = Math.min(ev.clientY + 16, innerHeight - th - 8) + "px";
+}
+function unhover() { $("tip").style.display = "none"; charts.forEach(c => c.svg.querySelector(".xh").setAttribute("visibility", "hidden")); }
+
+DATA.charts.forEach((spec, i) => makeChart(spec, i === 0));
+const redraw = () => charts.forEach(draw);
+redraw();
+addEventListener("resize", redraw);
+
+// ---- table view
+$("table").innerHTML = `<table><thead><tr>${DATA.table.head.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${
+  DATA.table.rows.map(r => `<tr>${r.map(c => `<td${c && c.cls ? ` class="${c.cls}"` : ""}>${c && c.text != null ? c.text : (c ?? "")}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+</script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+# Python bytecode from running the skill scripts
+__pycache__/
+*.pyc
