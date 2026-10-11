@@ -17,6 +17,7 @@ into `~/.claude/skills/`, where Claude Code picks it up.
 | `hyprland` | `hyprland.lua` (Hyprland 0.55+ Lua API): binds, window rules, monitors, autostart, DMS boundary |
 | `limine` | Limine bootloader, kernel cmdline, Snapper boot entries, Secure Boot signing |
 | `systemd` | Services, timers, user units, journald/logind, boot analysis |
+| `vm-test-harness` | QEMU VM as a test harness for install scripts, Secure Boot, restores and SSH/network lockdown: setup, running, watching, pitfalls |
 
 Not tracked here: `~/.claude/skills/*-workspace` (skill-creator eval
 iterations and logs), `~/.claude/skills/synced` (managed by claude.ai) and
@@ -27,7 +28,7 @@ third-party skills.
 ```sh
 git clone git@github.com:Enzord758/claude-skills.git ~/claude-skills
 mkdir -p ~/.claude/skills
-stow -d ~/claude-skills -t ~ arch-config coolercontrol hyprland limine systemd
+stow -d ~/claude-skills -t ~ arch-config coolercontrol hyprland limine systemd vm-test-harness
 ```
 
 Edits made through `~/.claude/skills/<name>` land in this repo, since the

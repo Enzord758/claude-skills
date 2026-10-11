@@ -1,0 +1,32 @@
+#!/usr/bin/expect -f
+# Run a command (usually ssh -tt into the VM) and answer the scripts' prompts
+# the way a person would. Everything is appended to LOGFILE.
+#   interact.exp TIMEOUT LOGFILE PASSWORD cmd args...
+# Add the project's own prompts as more -re branches at the top of the expect
+# block. Every pattern allows trailing ANSI escapes before the end: prompts are
+# often followed by colour resets or cursor codes.
+# TIMEOUT is an inactivity limit: every complete output line resets it, so a
+# prompt nobody answers (no newline after it) times out, a long build doesn't.
+# Exits with the command's exit code, 124 on timeout.
+set timeout [lindex $argv 0]
+set logf [lindex $argv 1]
+set pw [lindex $argv 2]
+set cmd [lrange $argv 3 end]
+log_user 0
+log_file -a $logf
+match_max 20000
+spawn {*}$cmd
+expect {
+	-re {Type YES to continue: (?:\x1b\[[0-9;?]*[A-Za-z])*$} { send "YES\r"; exp_continue }
+	-re {(?i)(new|retype new|retype|enter new) password: ?(?:\x1b\[[0-9;?]*[A-Za-z])*$} { send "$pw\r"; exp_continue }
+	-re {\[sudo\] password for [^:]+: ?(?:\x1b\[[0-9;?]*[A-Za-z])*$} { send "$pw\r"; exp_continue }
+	-re {'s password: ?(?:\x1b\[[0-9;?]*[A-Za-z])*$} { send "$pw\r"; exp_continue }
+	-re {\[[yY]/[nN]\] ?(?:\x1b\[[0-9;?]*[A-Za-z])*$} { send "y\r"; exp_continue }
+	-re {(?i)enter a selection \(default=all\): ?(?:\x1b\[[0-9;?]*[A-Za-z])*$} { send "\r"; exp_continue }
+	-re {(?i)enter a number \(default=1\): ?(?:\x1b\[[0-9;?]*[A-Za-z])*$} { send "\r"; exp_continue }
+	-re {[^\n]*\n} { exp_continue }
+	timeout { send_log "\n*** TIMEOUT: no output for $timeout s (unanswered prompt?) ***\n"; exit 124 }
+	eof
+}
+lassign [wait] pid spawnid os_error value
+exit $value
