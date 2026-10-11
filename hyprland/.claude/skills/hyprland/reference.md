@@ -147,7 +147,7 @@ hl.window_rule({
 })
 
 hl.window_rule({
-	match = { class = "^steam_app_.*$", title = "negative:Battle\\.net.*" }, -- .* needed: whole-string match
+	match = { class = "^steam_app_.*$", float = false, title = "negative:Battle\\.net.*" }, -- float = false: auto-floated splash/launchers drop out; .* needed: whole-string match
 	fullscreen_state = "2 2", -- internal + client; plain 2 left the DMS bar on top
 })
 
