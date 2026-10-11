@@ -10,6 +10,8 @@ Hyprland 0.56 on CachyOS, NVIDIA, two monitors (Dell 4K HDR main `monMain`, Sams
 ## Where things live
 
 - Config: `/home/Enzord/.config/hypr/hyprland.lua`. `~/.config/hypr` is a **stow directory symlink** → `~/dotfiles/hypr/.config/hypr/`, so there is only one file; editing either path is the same edit.
+- Because the symlink is on the *directory*, not per file, anything created under `~/.config/hypr/` — new files and new subdirectories alike — physically lands in `~/dotfiles/hypr/.config/hypr/` and works at once; no `stow` re-run. The flip side: it's a new **untracked** file in the repo, so name it when reporting what's uncommitted (a plain `git diff` won't show it).
+- Helper scripts called from binds/autostart live in `~/.config/hypr/scripts/` (e.g. `scripts/volume.sh up|down`), executable, and are referenced by absolute path: `hl.dsp.exec_cmd("/home/Enzord/.config/hypr/scripts/volume.sh up")`. Put new ones there rather than in `~/.local/bin`, so they travel with the dotfiles.
 - `~/dotfiles` is a git repo. Committing/pushing is the user's call — mention the change is uncommitted rather than committing it.
 - Desktop launchers: `/home/Enzord/.local/share/applications/*.desktop`; icons: `/home/Enzord/.local/share/icons/hicolor/<size|scalable>/apps/`.
 - Write paths out in full (`/home/Enzord/...`): when this session is root, `~` is `/root`.
