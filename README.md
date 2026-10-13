@@ -14,6 +14,7 @@ into `~/.claude/skills/`, where Claude Code picks it up.
 | --- | --- |
 | `arch-config` | General system config: packages/AUR, pacnew, kernel modules, sysctl, users, fstab/Btrfs, networking, audio, fonts |
 | `coolercontrol` | Fans, pump and cooling via the CoolerControl daemon's REST API (RGB stays with OpenRGB) |
+| `install-scripts` | Install scripts that rebuild the machine from the repo, kept in step with it by a drift check: structure, adopting drift, pitfalls |
 | `hyprland` | `hyprland.lua` (Hyprland 0.55+ Lua API): binds, window rules, monitors, autostart, DMS boundary |
 | `limine` | Limine bootloader, kernel cmdline, Snapper boot entries, Secure Boot signing |
 | `systemd` | Services, timers, user units, journald/logind, boot analysis |
@@ -28,7 +29,7 @@ third-party skills.
 ```sh
 git clone git@github.com:Enzord758/claude-skills.git ~/claude-skills
 mkdir -p ~/.claude/skills
-stow -d ~/claude-skills -t ~ arch-config coolercontrol hyprland limine systemd vm-test-harness
+stow -d ~/claude-skills -t ~ arch-config coolercontrol install-scripts hyprland limine systemd vm-test-harness
 ```
 
 Edits made through `~/.claude/skills/<name>` land in this repo, since the
