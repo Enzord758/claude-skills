@@ -17,11 +17,11 @@
     },
     {
       "id": 1,
-      "prompt": "lav en systemd timer der kører btrfs scrub på min games disk (/home/Enzord/games) hver søndag kl 4 om natten. hvis maskinen er slukket skal den bare køre næste gang den tænder",
-      "expected_output": "Proposes /etc/systemd/system/<name>.service (Type=oneshot, btrfs scrub start -B /home/Enzord/games) and <name>.timer (OnCalendar=Sun *-*-* 04:00:00, Persistent=true, WantedBy=timers.target); enables only the timer; validates with systemd-analyze calendar/verify; no inline comments; waits for OK.",
+      "prompt": "lav en systemd timer der kører btrfs scrub på min games disk (/home/enzord/games) hver søndag kl 4 om natten. hvis maskinen er slukket skal den bare køre næste gang den tænder",
+      "expected_output": "Proposes /etc/systemd/system/<name>.service (Type=oneshot, btrfs scrub start -B /home/enzord/games) and <name>.timer (OnCalendar=Sun *-*-* 04:00:00, Persistent=true, WantedBy=timers.target); enables only the timer; validates with systemd-analyze calendar/verify; no inline comments; waits for OK.",
       "files": [],
       "assertions": [
-        "Runs btrfs scrub on /home/Enzord/games via a oneshot service (own unit or the packaged btrfs-scrub@.service instance)",
+        "Runs btrfs scrub on /home/enzord/games via a oneshot service (own unit or the packaged btrfs-scrub@.service instance)",
         "Proposes a .timer with OnCalendar resolving to Sunday 04:00",
         "Timer has Persistent=true",
         "Timer WantedBy=timers.target and only the timer is enabled",

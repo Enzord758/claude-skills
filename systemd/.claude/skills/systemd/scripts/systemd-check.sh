@@ -35,8 +35,8 @@ bold "Local overrides (/etc, ~/.config) — vendor /usr/lib drop-ins omitted"
 systemd-delta --no-pager 2>/dev/null | grep -E '^\[' | grep -E '/etc/|/home/' || echo "(none in /etc)"
 ls -1 /etc/systemd/*.conf.d/ 2>/dev/null || echo "(no /etc/systemd/*.conf.d drop-ins)"
 echo "user units in ~/.config/systemd/user:"
-find "/home/Enzord/.config/systemd/user" -mindepth 1 \( -type f -o -type l \) -printf '  %P%l\n' 2>/dev/null | sed 's#\([^ ]\)/usr#\1 -> /usr#'
-find /home/Enzord/.config/systemd -user root 2>/dev/null | sed 's/^/  ROOT-OWNED: /'
+find ~enzord/.config/systemd/user -mindepth 1 \( -type f -o -type l \) -printf '  %P%l\n' 2>/dev/null | sed 's#\([^ ]\)/usr#\1 -> /usr#'
+find ~enzord/.config/systemd -user root 2>/dev/null | sed 's/^/  ROOT-OWNED: /'
 
 bold "Enabled-but-inactive user units (may be intentional: oneshots like xdg-user-dirs)"
 "${U[@]}" list-unit-files --state=enabled --type=service --no-legend 2>/dev/null | awk '{print $1}' | grep -v '@\.service$' \

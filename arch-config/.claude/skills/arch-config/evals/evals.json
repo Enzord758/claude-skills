@@ -83,7 +83,7 @@
         "Uses WirePlumber 0.5 SPA-JSON .conf in ~/.config/wireplumber/wireplumber.conf.d/ — not 0.4 Lua (main.lua.d / alsa_monitor.rules)",
         "Match rule targets the NVIDIA HDMI/DP device or nodes specifically, not all outputs",
         "Restart of the user services is targeted at enzord's user manager (systemctl --user -M enzord@ as root, or the user runs systemctl --user)",
-        "Any file created under /home/Enzord is owned by enzord (runuser or chown), if root",
+        "Any file created under /home/enzord is owned by enzord (runuser or chown), if root",
         "Explains what the rule does and how to undo it",
         "Waits for the user's OK before applying"
       ]

@@ -43,7 +43,7 @@ from pathlib import Path
 BASE = os.environ.get("CC_URL", "https://localhost:11987")
 CONF = Path("/etc/coolercontrol")
 # Always the desktop user's home, also when this runs as root (root's $HOME is /root).
-USER_HOME = Path("/home/Enzord")
+USER_HOME = Path("~enzord").expanduser()
 TOKEN_FILE = USER_HOME / ".config/coolercontrol-skill/token"
 SNAP_DIR = USER_HOME / ".local/state/coolercontrol-skill/snapshots"
 HWMON = Path("/sys/class/hwmon")
@@ -304,7 +304,7 @@ def cmd_snapshot(args):
         except OSError:
             pass
     if os.geteuid() == 0:  # keep the user's state dir user-owned
-        subprocess.run(["chown", "-R", "enzord:Enzord", str(SNAP_DIR.parent)], check=False)
+        subprocess.run(["chown", "-R", "enzord:enzord", str(SNAP_DIR.parent)], check=False)
     print(f"snapshot: {d}\n  saved: {', '.join(saved)}")
     if not token():
         print("  (no token: only the on-disk config files were saved)")
@@ -569,7 +569,7 @@ def cmd_topology(args):
     TOPOLOGY_FILE.parent.mkdir(parents=True, exist_ok=True)
     TOPOLOGY_FILE.write_text(json.dumps(t, indent=2) + "\n")
     if os.geteuid() == 0:
-        subprocess.run(["chown", "enzord:Enzord", str(TOPOLOGY_FILE)], check=False)
+        subprocess.run(["chown", "enzord:enzord", str(TOPOLOGY_FILE)], check=False)
     print(f"saved {TOPOLOGY_FILE}\n" + topology_advice(t))
 
 

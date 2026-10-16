@@ -40,7 +40,7 @@ hdr "package cache"
 du -sh /var/cache/pacman/pkg 2>/dev/null
 echo "paccache.timer: $(systemctl is-enabled paccache.timer 2>/dev/null)"
 echo "interrupted-download leftovers (download-*): $(ls -d /var/cache/pacman/pkg/download-* 2>/dev/null | wc -l)"
-[ -d /home/Enzord/.cache/yay ] && echo "yay build cache: $(du -sh /home/Enzord/.cache/yay 2>/dev/null | cut -f1)"
+[ -d ~enzord/.cache/yay ] && echo "yay build cache: $(du -sh ~enzord/.cache/yay 2>/dev/null | cut -f1)"
 echo "explicit leaf packages to review: $(pacman -Qetq | wc -l) (pacman -Qetq; AUR: pacman -Qmq)"
 
 hdr "failed units"

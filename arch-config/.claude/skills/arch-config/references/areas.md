@@ -47,7 +47,7 @@ Changing: edit that file for hardening keys; put unrelated tuning (e.g. `vm.swap
 
 ## 4. Users, groups, sudo
 
-`enzord`: groups `Enzord wheel audio input storage video`; shell `/bin/zsh`. `wheel` gives sudo (password required).
+`enzord`: groups `enzord wheel audio input storage video`; shell `/bin/zsh`. `wheel` gives sudo (password required).
 
 - Adding to a group: `sudo usermod -aG <group> enzord` (**`-a`** — without it, `-G` replaces all supplementary groups and can drop `wheel` = losing sudo). Takes effect at next login (`newgrp` / re-login); verify with `id enzord` (shows the DB) vs `id` (current session).
 - With systemd-logind + PipeWire, device access is granted by uaccess ACLs to the active seat — `audio`/`video`/`input`/`storage` groups are mostly not needed and `input` lets any process read keystrokes. Don't add more of these as a fix; find out why uaccess didn't apply (usually a udev rule missing `TAG+="uaccess"`). Common legit additions: `docker`/`libvirt`, `uucp` (serial devices), `gamemode` isn't a group.
@@ -68,7 +68,7 @@ Changing: edit that file for hardening keys; put unrelated tuning (e.g. `vm.swap
 
 ## 5. Storage: fstab, Btrfs, snapper, swap
 
-Layout on `sda3` (one Btrfs, `compress=zstd:1,noatime,ssd,discard=async,space_cache=v2`): `@`→`/`, `@home`→`/home`, `@cache`→`/var/cache`, `@log`→`/var/log`, `@snapshots`→`/.snapshots`. ESP `sda1`→`/boot` (vfat, 1.5 GB, holds kernels + snapshot initramfs history). Swap partition `sda2` (8 GB, zswap enabled, no zram). Games: separate Btrfs RAID0 at `/home/Enzord/games` with `nofail,x-systemd.device-timeout=10` (keep — boot survives a missing disk).
+Layout on `sda3` (one Btrfs, `compress=zstd:1,noatime,ssd,discard=async,space_cache=v2`): `@`→`/`, `@home`→`/home`, `@cache`→`/var/cache`, `@log`→`/var/log`, `@snapshots`→`/.snapshots`. ESP `sda1`→`/boot` (vfat, 1.5 GB, holds kernels + snapshot initramfs history). Swap partition `sda2` (8 GB, zswap enabled, no zram). Games: separate Btrfs RAID0 at `/home/enzord/games` with `nofail,x-systemd.device-timeout=10` (keep — boot survives a missing disk).
 
 - **fstab edits**: identify by `UUID=` (from `lsblk -f` / `blkid`), never `/dev/sdX` for new entries. Validate (`findmnt --verify --tab-file new.fstab`), install, `sudo systemctl daemon-reload`, `sudo mount -a`, `findmnt <target>`. Any non-root disk gets `nofail` — without it a missing/broken disk drops boot into emergency mode. New Btrfs subvolume entries copy the existing option set and add `subvol=/@name`.
 - Subvolumes keep data out of root snapshots: new `@name` for things like VM images, large downloads, or databases (also `chattr +C` on the empty dir for VM images/DBs to disable CoW). Creating one: mount the top level (`subvolid=5`) somewhere temporary, `btrfs subvolume create`, add fstab line.
@@ -117,7 +117,7 @@ Installed: noto-fonts (+cjk, emoji), ttf-jetbrains-mono-nerd, MesloLGS Nerd (p10
 
 Remote `flathub` (system-wide). No apps installed currently.
 - Install user-level without root: `flatpak install --user flathub <id>` (needs `flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo` once) — useful when running as enzord. System-wide installs need root/polkit.
-- Permissions: `flatpak override --user --filesystem=/home/Enzord/games <id>`, inspect with `flatpak info --show-permissions <id>`. Flatseal is the GUI.
+- Permissions: `flatpak override --user --filesystem=/home/enzord/games <id>`, inspect with `flatpak info --show-permissions <id>`. Flatseal is the GUI.
 - Theming: GTK theme inside flatpaks needs the matching `org.gtk.Gtk3theme.*` or `--env=GTK_THEME=…` override; cursor via `--filesystem=~/.icons:ro` / `xdg-data/icons:ro`.
 
 ## 10. AppArmor

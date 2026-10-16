@@ -17,7 +17,7 @@ Read this when creating a new service/timer/socket/path unit or a substantial dr
 | Runs … | Put it in | Enable with |
 |---|---|---|
 | at boot, independent of login, needs root or a system user | `/etc/systemd/system/` | `systemctl enable --now x` |
-| while enzord is logged into the desktop (needs Wayland, pipewire, dbus session, notifications) | `/home/Enzord/.config/systemd/user/` (owned by enzord) | `systemctl --user -M enzord@ enable --now x` |
+| while enzord is logged into the desktop (needs Wayland, pipewire, dbus session, notifications) | `/home/enzord/.config/systemd/user/` (owned by enzord) | `systemctl --user -M enzord@ enable --now x` |
 | as enzord but also without login | user unit + `loginctl enable-linger enzord` (ask first — keeps a user manager running permanently) | as above |
 
 A system service with `User=enzord` does **not** get the user's session bus or `$WAYLAND_DISPLAY`. If the program touches the desktop, it's a user unit.
@@ -121,7 +121,7 @@ NoNewPrivileges=yes
 # / read-only except:
 ProtectSystem=strict
 ReadWritePaths=/var/lib/foo
-# or read-only; NB /home/Enzord/games is under /home
+# or read-only; NB /home/enzord/games is under /home
 ProtectHome=yes
 PrivateTmp=yes
 PrivateDevices=yes

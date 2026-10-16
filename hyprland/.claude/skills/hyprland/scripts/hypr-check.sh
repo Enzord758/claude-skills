@@ -10,7 +10,7 @@
 
 set -u
 HUSER=enzord
-HHOME=/home/Enzord
+HHOME=~enzord
 LIVE_DIR="$HHOME/.config/hypr"
 LIVE="$LIVE_DIR/hyprland.lua"
 HUID=$(id -u "$HUSER")
@@ -101,7 +101,7 @@ case "${1:-}" in
     echo "== ownership (files under the user's config must stay $HUSER-owned)"
     bad=$(find -L "$LIVE_DIR" "$HHOME/.local/share/applications" "$HHOME/.local/share/icons/hicolor" \
             ! -user "$HUSER" 2>/dev/null)
-    if [ -n "$bad" ]; then echo "NOT owned by $HUSER (fix as root: chown $HUSER:Enzord <file>):"; echo "$bad"; else echo "ok"; fi
+    if [ -n "$bad" ]; then echo "NOT owned by $HUSER (fix as root: chown $HUSER:enzord <file>):"; echo "$bad"; else echo "ok"; fi
     exit $rc
     ;;
   *)

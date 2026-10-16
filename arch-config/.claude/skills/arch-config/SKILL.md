@@ -5,14 +5,14 @@ description: Use for general system configuration and maintenance on this CachyO
 
 # Arch/CachyOS configuration (this machine)
 
-**Machine:** Arch base + CachyOS repos/kernel (`linux-cachyos`, prebuilt `linux-cachyos-nvidia-open`), Ryzen 7 7800X3D (→ `*-znver4` repos), RTX 4090, 31 GB RAM, Btrfs root with snapper + snap-pac, Limine with Secure Boot and an enrolled config hash, Hyprland via uwsm + DankMaterialShell. User `enzord` (UID 1000, home `/home/Enzord` — capital E; group `Enzord`). Danish user, `en_DK` locale, Europe/Copenhagen. Dotfiles in `~/dotfiles` (GNU stow).
+**Machine:** Arch base + CachyOS repos/kernel (`linux-cachyos`, prebuilt `linux-cachyos-nvidia-open`), Ryzen 7 7800X3D (→ `*-znver4` repos), RTX 4090, 31 GB RAM, Btrfs root with snapper + snap-pac, Limine with Secure Boot and an enrolled config hash, Hyprland via uwsm + DankMaterialShell. User `enzord` (UID 1000, home `/home/enzord`; group `enzord`). Danish user, `en_DK` locale, Europe/Copenhagen. Dotfiles in `~/dotfiles` (GNU stow).
 
 This is a map, not the inventory. Live state wins: if the system contradicts something written here, trust the system and say so.
 
 ## Inspect efficiently
 
 - **Targeted change** ("sæt X til Y", "åbn port Z"): go straight to the few live values and files involved (`sysctl <key>`, `cat` the file, `pacman -Qo`, `/sys/module/<m>/parameters/`, `firewall-cmd --list-all` …). No overview script needed.
-- **Open-ended maintenance** ("opdater", "ryd op", "hvad er galt", "hvorfor er det langsomt"): start with `bash /home/Enzord/.claude/skills/arch-config/scripts/arch-check.sh` — it's read-only (no need to read it first) and prints identity, pending updates/reboot, .pacnew files, orphans, cache, failed units and disk in one go. Then **look around beyond it** the way you would without this skill: `ls` the directories involved, read the real hook/config files, review explicitly installed and AUR packages for forgotten ones. What a checklist misses (leftover dirs in the cache, a masked hook, an unused benchmark tool) is exactly what the user wants to hear about.
+- **Open-ended maintenance** ("opdater", "ryd op", "hvad er galt", "hvorfor er det langsomt"): start with `bash /home/enzord/.claude/skills/arch-config/scripts/arch-check.sh` — it's read-only (no need to read it first) and prints identity, pending updates/reboot, .pacnew files, orphans, cache, failed units and disk in one go. Then **look around beyond it** the way you would without this skill: `ls` the directories involved, read the real hook/config files, review explicitly installed and AUR packages for forgotten ones. What a checklist misses (leftover dirs in the cache, a masked hook, an unused benchmark tool) is exactly what the user wants to hear about.
 - **References**: read only the section you need — `grep -n '^## ' <file>` for the table of contents, then read that section. Don't load both files whole.
 
 ## Hand off to the specialised skills
@@ -30,7 +30,7 @@ Many tasks span two (a modprobe option for `nvidia` lives here; the initramfs re
 
 Run `id -u` first; it decides how changes are applied.
 
-- **Root (uid 0):** apply after the user's OK. Files you create under `/home/Enzord` become root-owned — use `runuser -u enzord -- …` or `chown enzord:Enzord`. User-session commands: `systemctl --user -M enzord@ …`. Never run `yay`/`makepkg` as root (makepkg refuses; building AUR as root is unsafe) — `runuser -u enzord -- yay -Q…` for read-only queries, AUR installs go to the user.
+- **Root (uid 0):** apply after the user's OK. Files you create under `/home/enzord` become root-owned — use `runuser -u enzord -- …` or `chown enzord:enzord`. User-session commands: `systemctl --user -M enzord@ …`. Never run `yay`/`makepkg` as root (makepkg refuses; building AUR as root is unsafe) — `runuser -u enzord -- yay -Q…` for read-only queries, AUR installs go to the user.
 - **enzord (uid 1000):** no passwordless sudo, and `sudo` can't prompt from your shell. Do the unprivileged parts yourself; hand the privileged part to the user:
   - One or two commands → one copy-paste block, each line starting with `sudo`.
   - Several files/steps → write the files plus an `apply.sh` in your scratchpad, show its full content, user runs `sudo bash <path>/apply.sh`. Idempotent, `set -euo pipefail`, back up overwritten files to `<file>.claude-bak`, end with verification commands. Ask them to paste the output.

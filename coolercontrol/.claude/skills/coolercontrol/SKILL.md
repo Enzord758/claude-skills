@@ -69,7 +69,7 @@ Check `id -u` first. Sessions run either as **enzord** (UID 1000, no passwordles
 
 ### The token
 
-`cc.py` reads a bearer token from `$CC_TOKEN` or `/home/Enzord/.config/coolercontrol-skill/token` (the same path for root). Run `cc.py token` to see whether one exists and works.
+`cc.py` reads a bearer token from `$CC_TOKEN` or `/home/enzord/.config/coolercontrol-skill/token` (the same path for root). Run `cc.py token` to see whether one exists and works.
 
 If none exists, stop and ask the user to create one. Instructions to give the user:
 
