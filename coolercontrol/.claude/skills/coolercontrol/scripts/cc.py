@@ -18,7 +18,7 @@
                              (re)build the HTML report for a run (default: the latest) and open it
   cc.py scenario [NAME] [--minutes N] [--yes]
                              realistic load: encode (CPU video export), nvenc (GPU export), render (Blender GPU),
-                             gamelike (GPU high + CPU mid), heatsoak (CPU max + GPU render), burn (synthetic extreme);
+                             gamelike (GPU high + CPU mid), heatsoak (CPU max + GPU render);
                              no NAME lists them. Games/benchmarks you start yourself: use `record`.
                              stresstest/scenario only print the plan unless --yes is given
   cc.py plot PROFILE [PROFILE…] [--new file.json …] [--mark TEMP:label …]
@@ -736,7 +736,7 @@ def build_graph(run_dir):
 
 
 PHASE_DA = {"idle": "Tomgang", "cooldown": "Nedkøling", "recovery": "Genopretning", "record": "Måling",
-            "encode": "CPU-eksport", "nvenc": "NVENC-eksport", "heatsoak": "CPU + GPU-render", "burn": "Syntetisk burn",
+            "encode": "CPU-eksport", "nvenc": "NVENC-eksport", "heatsoak": "CPU + GPU-render",
             "gaming": "Gaming", "game": "Spil (Superposition)", "render": "3D-render", "gamelike": "Spil-lignende"}
 
 
@@ -1205,15 +1205,6 @@ def superposition_cmd():
     return ["sh", "-c", f'cd "{SUPERPOSITION}" && exec "$@"', "superposition"] + args
 
 
-def gpu_load_cmd():
-    """A command that loads the GPU hard, from whatever is installed, or None."""
-    import shutil
-    if shutil.which("gpu_burn") or shutil.which("gpu-burn"):
-        # no -d: doubles run at 1/64 rate on GeForce cards and barely load them
-        return [shutil.which("gpu_burn") or shutil.which("gpu-burn"), "86400"]
-    return None
-
-
 SCENARIOS = {
     "encode": {
         "title": "Videoeksport på CPU (SVT-AV1, 4K)",
@@ -1261,15 +1252,6 @@ SCENARIOS = {
         "needs": "blender",
         "minutes": 10,
     },
-    "burn": {
-        "title": "Ekstrem syntetisk last: CPU 100 % + gpu_burn",
-        "what": "every CPU core plus gpu_burn (~445 W, far denser than games or renders). A synthetic torture test, "
-                "not a realistic worst case; GPU hotspot numbers from it overstate real use",
-        "load": lambda: ([["stress-ng", "--cpu", "0", "--cpu-method", "matrixprod", "--quiet"]]
-                         + ([gpu_load_cmd()] if gpu_load_cmd() else [])),
-        "needs_gpu": True,
-        "minutes": 10,
-    },
 }
 
 
@@ -1281,6 +1263,7 @@ def cmd_scenario(args):
         print("usage: cc.py scenario NAME [--minutes N] [--max-minutes N] [--idle SECS] [--cooldown SECS] [--yes]")
         print("the load runs --minutes, then extends a minute at a time while the curve sensor still rises > 0.3 °C/min (cap --max-minutes)")
         print("games / benchmarks you start yourself: cc.py record 20m")
+        print("max GPU load: CoolerControl's own GPU stress test (UI → Stress tests; needs the admin login) + cc.py record")
         sys.exit(0 if not args else 2)
     sc = SCENARIOS[args[0]]
     opts = {"--minutes": str(sc["minutes"]), "--max-minutes": "20", "--idle": "60", "--cooldown": "120"}
@@ -1297,8 +1280,6 @@ def cmd_scenario(args):
         sys.exit(f"this scenario needs {sc['needs_file']} (not installed, or not readable for this user)")
     if sc.get("needs_display") and not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
         sys.exit("this scenario opens a fullscreen window and needs the user's graphical session (run it as enzord, not root)")
-    if sc.get("needs_gpu") and not gpu_load_cmd():
-        sys.exit("this scenario needs gpu_burn (not installed); for a realistic GPU load use the game scenario")
     secs = int(float(opts["--minutes"]) * 60)
     plan = [("idle", int(opts["--idle"]), []),
             (args[0], secs, sc["load"](), {"until_stable": True, "max_secs": max(secs, int(float(opts["--max-minutes"]) * 60))}),
