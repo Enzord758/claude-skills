@@ -29,7 +29,8 @@ Read `references/pitfalls.md` when something fails and before the VM test.
 4. **Desktop**: compositor, shell, greeter, audio, fonts; home-manager linking
    the existing dotfiles.
 5. **Packages and services** from the inventory.
-6. **Backup and restore** ported; secrets (sops-nix/agenix) last, with the user.
+6. **Backup and restore** ported (restore must also read backups taken
+   under the old system's paths); then secrets with sops-nix, with the user.
 7. **Real install** only after the VM install + login test passes; the user
    does it.
 
@@ -64,6 +65,36 @@ Read `references/pitfalls.md` when something fails and before the VM test.
 - **Backup in the store**: wrap the backup script with `writeShellScriptBin`
   and an explicit PATH, lists via `environment.etc`, the share as an
   `x-systemd.automount` NFS mount, the timer as `systemd.timers`.
+- **Packages nixpkgs doesn't have** in `pkgs/default.nix`, one function per
+  kind: AppImages through `appimageTools.wrapType2` (with `extractType2` for
+  the .desktop file and icons), Rust through `buildRustPackage` (no
+  Cargo.lock upstream: generate one, keep it in the repo, `cargoLock.lockFile`
+  + copy it in `postPatch`), scripts through `stdenvNoCC.mkDerivation`
+  (shebangs are patched). Always a **versioned** URL. Search nixpkgs first:
+  apps often exist under another name (an AUR `archon-appimage` is nixpkgs'
+  `archon-lite`).
+- **Pinned, but kept current by a script**: versions, URLs and hashes in a
+  `pkgs/sources.json` the Nix code reads (`builtins.fromJSON`); an
+  `update.sh` asks each upstream for its newest version (GitHub releases API,
+  or the AUR RPC for apps without a version feed), downloads only what
+  changed, writes the hash (for `fetchurl` it's the file's sha256 as SRI:
+  `sha256-$(sha256sum f | cut -d' ' -f1 | xxd -r -p | base64 -w0)`, no Nix
+  needed), regenerates lock files, and tells the user to run the VM test.
+  `--check` only reports. Never point fetchurl at a "latest" URL: the hash
+  breaks at the next upstream release and with it every rebuild.
+- **Secrets with sops-nix**: one `secrets/secrets.yaml`, encrypted for the
+  machine (its SSH host key converted with `ssh-to-age`) and the owner's
+  offline age key (who edits with `sops`), recipients in `.sops.yaml`.
+  `sops.age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ]`. Typical:
+  the user's password hash (`neededForUsers = true` +
+  `users.users.<u>.hashedPasswordFile`) and system connection files placed
+  with `path` and `mode`. Keep fast-changing tokens and home keys in the
+  backup instead. Take the values from the old system and pipe them straight
+  into `sops --encrypt` (e.g. inside the test VM via `nix shell
+  nixpkgs#sops`), never to a file in clear text. If the machine keeps the old
+  system's host key, it must be in `/mnt/etc/ssh` **before** `nixos-install`,
+  or the first activation can't decrypt. Turn secrets off in the VM-test
+  variant (its host key isn't a recipient), and verify decryption separately.
 
 ## VM test
 
