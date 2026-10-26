@@ -172,6 +172,25 @@ hl.window_rule({
 - **`monitor` needs its own `silent`.** A rule with `monitor = X` (no `silent`) makes Hyprland call `focusMonitor` when the window opens on another monitor than the focused one, which **warps the cursor** there (monitor middle, or the window's middle if one is focusable). `workspace = "N silent"` and `no_initial_focus` do not prevent it. For apps that should open in the background (Discord at login), write `monitor = monLeft .. " silent"` — Hyprland takes `silent` from the last space-separated word, so it works with `desc:` strings containing spaces. Leave it non-silent only when following the window is wanted (the games on `monMain`).
 - Effect fields used: `float`, `size` ("w h"), `move` (expression strings), `fullscreen_state`, `monitor`, `workspace`, `no_initial_focus`, `suppress_event`. The stubs don't list effect fields; they're snake_case versions of the wiki's windowrule effect names, and an unknown one is reported by `hypr-check.sh` as `unknown field '…'`.
 
+## Reacting to a title change (window rules can't)
+
+```lua
+hl.on("window.title", function(w)
+	if w.class ~= "steam_app_default" or w.title ~= "Battle.net" or w.floating then
+		return
+	end
+	hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 0, client = 0, window = w }))
+	hl.dispatch(hl.dsp.window.float({ action = "set", window = w }))
+	hl.dispatch(hl.dsp.window.resize({ x = 1765, y = 1203, window = w }))
+	hl.dispatch(hl.dsp.window.center({ window = w }))
+end)
+```
+- The callback gets one `HL.Window` (fields: `class`, `title`, `initial_title`, `floating`, `fullscreen`, `address`, … — `HL.Window` in the stubs). Pass it as `window = w` to target that window; without `window` a dispatcher acts on the focused one.
+- Dispatcher tables (from the binary's error strings, tested): `fullscreen_state { internal, client, action?, window? }` (action toggle/set/unset), `float { action, window? }`, `resize { x, y, relative?, window? }` (or no args for the mouse bind), `center { window? }`.
+- Guard so it runs once (`w.floating` here): `window.title` fires on every title change.
+- Top-level `hl.on` is safe with autoreload — handlers are dropped on reload, not stacked (tested: 1 call per event after 3 reloads).
+- Not validated by `--verify-config` beyond syntax: dispatcher names/args only fail when the event fires, so test with a throwaway window (`kitty --class probe sh -c 'printf "\033]2;after\007"; sleep 2'`; note `kitty --title` locks the title, so don't use it for this).
+
 ## Layer rules
 
 Not in the main file yet; DMS's `dms/layout.lua` shows the shape:
