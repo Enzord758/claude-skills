@@ -15,7 +15,13 @@ LIVE_DIR="$HHOME/.config/hypr"
 LIVE="$LIVE_DIR/hyprland.lua"
 HUID=$(id -u "$HUSER")
 RUNDIR="/run/user/$HUID"
-SIG=$(ls -t "$RUNDIR/hypr" 2>/dev/null | head -1)
+# The live instance is the dir whose hyprland.lock holds a running PID. "Newest dir" is not
+# enough: a crashed session and every --verify-config run leave instance dirs behind too.
+SIG=""
+for d in $(ls -t "$RUNDIR/hypr" 2>/dev/null); do
+  pid=$(head -1 "$RUNDIR/hypr/$d/hyprland.lock" 2>/dev/null)
+  if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then SIG=$d; break; fi
+done
 
 as_user() {
   if [ "$(id -u)" = 0 ]; then
@@ -72,7 +78,7 @@ verify() { # $1 = path to a hyprland.lua whose dms/ sits next to it
   if [ "$rc" -ge 124 ] || ! grep -q 'Config parsing result' <<<"$out"; then
     # A crash/timeout prints no verdict at all — say so loudly instead of printing nothing.
     echo "VERIFY DID NOT FINISH (exit $rc$([ "$rc" -gt 128 ] && echo ", signal $((rc - 128))")) — the config was NOT checked."
-    echo "Known cause: a top-level hl.exec_cmd(cmd, { rules }) segfaults --verify-config on 0.56.2. Last output:"
+    echo "Known cause: a top-level hl.exec_cmd(cmd, { rules }) segfaults --verify-config (0.56.2 and 0.57.0). Last output:"
     tail -5 <<<"$out" | sed 's/\x1b\[[0-9;]*m//g; s/^/  /'
     return 3
   fi

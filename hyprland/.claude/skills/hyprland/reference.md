@@ -36,7 +36,7 @@ end)
 
 Cursor at login: `cursor.default_monitor = monMain` (UDSEENDE) is all it takes — Hyprland warps to it when that monitor is added. There is deliberately no cursor timer here: an earlier one "didn't work" because the Discord rule warped the cursor away again (see the `silent` note under window rules). If the cursor ends up on the wrong monitor, look for a window rule with a non-silent `monitor` before adding timers.
 
-`hl.exec_cmd(cmd, rules)` takes an optional second table of exec rules (e.g. `{ workspace = "3 silent" }`) that apply to that one launch. Keep it inside this block: at top level it re-runs on every autoreload, and a top-level call *with* rules segfaults `Hyprland --verify-config` on 0.56.2. Rule keys here are not validated — for permanent placement a window rule is the better tool.
+`hl.exec_cmd(cmd, rules)` takes an optional second table of exec rules (e.g. `{ workspace = "3 silent" }`) that apply to that one launch. Keep it inside this block: at top level it re-runs on every autoreload, and a top-level call *with* rules segfaults `Hyprland --verify-config` on 0.56.2 and 0.57.0. Rule keys here are not validated — for permanent placement a window rule is the better tool.
 
 ## Env vars (MILJØVARIABLER)
 
@@ -118,7 +118,7 @@ end
 ```
 - Keys are one string: `"SUPER + SHIFT + X"`. Key names follow xkb (`period`, `Print`, `XF86AudioMute`, `mouse:272`).
 - Third arg = options, from `HL.BindOptions` in the stubs: `repeating` (held-key repeat), `locked` (works on lock screen), `release`, `long_press`, `non_consuming`, `click`, `drag`, `description`… **Unknown option names are silently ignored** — verification won't catch `repeatin`, so copy names from the stubs and check the flags in `hypr-check.sh binds` afterwards.
-- `{ mouse = true }` on the two mouse:272/273 binds is copied from the upstream example but isn't in `HL.BindOptions` and has no effect on 0.56.2 (`hyprctl binds` shows `mouse: false`); `window.drag()`/`window.resize()` handle the mouse themselves. Leave the existing lines alone; don't add it to new binds expecting it to do something.
+- `{ mouse = true }` on the two mouse:272/273 binds is copied from the upstream example but isn't in `HL.BindOptions` and has no effect on 0.56.2 or 0.57 (`hyprctl binds` shows `mouse: false`; the option was since removed from the config); `window.drag()`/`window.resize()` handle the mouse themselves. Leave the existing lines alone; don't add it to new binds expecting it to do something.
 - Dispatchers live in `hl.dsp.*`, `hl.dsp.window.*`, `hl.dsp.workspace.*`, `hl.dsp.group.*`, `hl.dsp.cursor.*` — the complete list is the `HL.Dsp*Namespace` classes in the stubs. A misspelt dispatcher is a runtime error that stops the rest of the file loading, so check the stubs rather than guessing.
 - Currently taken with SUPER: RETURN Q E V SPACE B F period Print h j k l 0–9 arrows mouse_up/down mouse:272/273; SUPER+SHIFT: M Print 0–9 arrows. Re-check with `hypr-check.sh binds` before trusting this list.
 
@@ -188,7 +188,7 @@ end)
 - The callback gets one `HL.Window` (fields: `class`, `title`, `initial_title`, `floating`, `fullscreen`, `address`, … — `HL.Window` in the stubs). Pass it as `window = w` to target that window; without `window` a dispatcher acts on the focused one.
 - Dispatcher tables (from the binary's error strings, tested): `fullscreen_state { internal, client, action?, window? }` (action toggle/set/unset), `float { action, window? }`, `resize { x, y, relative?, window? }` (or no args for the mouse bind), `center { window? }`.
 - Guard so it runs once (`w.floating` here): `window.title` fires on every title change.
-- Top-level `hl.on` is safe with autoreload — handlers are dropped on reload, not stacked (tested: 1 call per event after 3 reloads).
+- Top-level `hl.on` is safe with autoreload — handlers are dropped on reload, not stacked (tested on 0.56 and 0.57: 1 call per event after 3 reloads).
 - Not validated by `--verify-config` beyond syntax: dispatcher names/args only fail when the event fires, so test with a throwaway window (`kitty --class probe sh -c 'printf "\033]2;after\007"; sleep 2'`; note `kitty --title` locks the title, so don't use it for this).
 
 ## Layer rules
